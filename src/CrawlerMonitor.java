@@ -7,6 +7,7 @@ import java.util.List;
 public class CrawlerMonitor {
 
     private Frontier frontier;
+    private HttpResponseClient responseClient;
     private CrawlerConfig config;
     private Object mutex = new Object();
 
@@ -19,6 +20,7 @@ public class CrawlerMonitor {
     public CrawlerMonitor(CrawlerConfig config) {
         this.config = config;
         this.frontier = new Frontier(this.config.getMaxPages());
+        this.responseClient = new HttpResponseClient(this.config);
     }
 
     /**
@@ -34,7 +36,7 @@ public class CrawlerMonitor {
 
         // start all the worker threads
         for (int i = 0; i < config.getNumberOfCrawler(); i++) {
-            WebCrawler crawler = new WebCrawler(config, frontier);
+            WebCrawler crawler = new WebCrawler(config, frontier, responseClient);
             Thread thread = new Thread(crawler, "Crawler " + i);
             thread.start();
             crawlers.add(crawler);
@@ -55,7 +57,7 @@ public class CrawlerMonitor {
                         for (int i = 0; i < threads.size(); i++) {
                             if (!threads.get(i).isAlive()) {
                                 System.out.printf("Crawler %d dead\n", i);
-                                WebCrawler crawler = new WebCrawler(config, frontier);
+                                WebCrawler crawler = new WebCrawler(config, frontier, responseClient);
                                 Thread thread = new Thread(crawler, "Crawler " + i);
                                 thread.start();
                                 threads.remove(i);

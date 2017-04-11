@@ -1,13 +1,5 @@
 import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.http.HttpHost;
 import org.apache.http.HttpStatus;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
@@ -21,7 +13,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
 
@@ -35,13 +26,8 @@ public class WebCrawler implements Runnable {
 
     private CrawlerConfig config;
     private Frontier frontier;
+    private HttpResponseClient responseClient;
     private final Object mutex = new Object();
-    private CloseableHttpClient httpClient;
-
-    /**
-     * Last timestamp thread is working
-     */
-    private long lastVisitTime;
 
     /**
      * Whether the thread is waiting for frontier to assign url
@@ -56,18 +42,16 @@ public class WebCrawler implements Runnable {
     /**
      * Default constructor
      * Initial all the local instances
-     * Set up the default header of HTTP requests according to config
      *
-     * @param config   The config of crawler defined by user
-     * @param frontier The frontier created by the monitor
+     * @param config         The config of crawler defined by user
+     * @param frontier       The frontier created by the monitor
+     * @param responseClient The precooked http client
      */
-    public WebCrawler(CrawlerConfig config, Frontier frontier) {
-        this.lastVisitTime = 0;
+    public WebCrawler(CrawlerConfig config, Frontier frontier, HttpResponseClient responseClient) {
         resultPages = new ArrayList<>();
         this.config = config;
         this.frontier = frontier;
-
-        this.httpClient = preCookHttpClient();
+        this.responseClient = responseClient;
     }
 
     public boolean isWaitingForURL() {
@@ -106,33 +90,10 @@ public class WebCrawler implements Runnable {
 
             // do something when result is large
             // TODO: 2017/4/9 save to disk maybe
-            if (resultPages.size() > 50) {
+            if (resultPages.size() > 10) {
                 saveToDisk();
             }
         }   // end of while loop
-    }
-
-    /**
-     * Set up the default header of HTTP requests according to config
-     *
-     * @return Cooked CloseableHttpClient
-     */
-    public CloseableHttpClient preCookHttpClient() {
-        RequestConfig customRequest = RequestConfig.custom().setExpectContinueEnabled(false).setCookieSpec(CookieSpecs.STANDARD).setRedirectsEnabled(false).setSocketTimeout(config.getSocketTimeout()).setConnectionRequestTimeout(config.getConnectionTimeout()).build();
-
-        HttpClientBuilder clientBuilder = HttpClientBuilder.create();
-        clientBuilder.setDefaultRequestConfig(customRequest);
-        clientBuilder.setUserAgent(config.getUserAgent());
-
-        if (config.getProxyHost() != null) {
-            HttpHost proxyHost = new HttpHost(config.getProxyHost(), config.getProxyPort());
-            clientBuilder.setProxy(proxyHost);
-        }
-
-        CloseableHttpClient httpClient;
-        httpClient = clientBuilder.build();
-
-        return httpClient;
     }
 
     /**
@@ -141,25 +102,8 @@ public class WebCrawler implements Runnable {
      * @param url Link should be visited
      */
     public void visit(WebURL url) {
-
-        HttpUriRequest httpUriRequest = null;
-        HTTPResponseResult responseResult = new HTTPResponseResult();
-
         try {
-
-            // wait for politeness delay
-            long now = new Date().getTime();
-            if (now - lastVisitTime < this.config.getVisitDelay()) {
-                Thread.sleep(this.config.getVisitDelay() - (now - lastVisitTime));
-            }
-            lastVisitTime = new Date().getTime();
-
-            // establish http connection
-            httpUriRequest = new HttpGet(url.getUrl());
-            CloseableHttpResponse httpResponse = this.httpClient.execute(httpUriRequest);
-            responseResult.setStatusCode(httpResponse.getStatusLine().getStatusCode());
-            responseResult.setResponseHeaders(httpResponse.getAllHeaders());
-            responseResult.setHttpEntity(httpResponse.getEntity());
+            HTTPResponseResult responseResult = responseClient.getResponse(url, config.getVisitDelay());
 
             // do something according to the response
             // TODO: 2017/4/9 response to other code
@@ -175,15 +119,9 @@ public class WebCrawler implements Runnable {
                 if (config.getMaxDepth() < 0 || url.getDepth() + 1 < config.getMaxDepth())
                     frontier.scheduleWork(links, (short) (url.getDepth() + 1), config);
             }
-
-            httpResponse.close();
             System.out.println("Visited: " + url.getUrl());
-
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            if (responseResult.getHttpEntity() == null && httpUriRequest != null)
-                httpUriRequest.abort();
         }
     }
 

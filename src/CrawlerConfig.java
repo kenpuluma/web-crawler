@@ -19,7 +19,7 @@ public class CrawlerConfig {
     private int maxPages = -1;
 
     /**
-     * Delay between two requests for single worker thread, default is 1 millisecond
+     * Delay between two requests, default is 1 millisecond
      */
     private int visitDelay = 1000;
 
