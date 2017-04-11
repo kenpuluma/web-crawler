@@ -16,7 +16,7 @@ public class WebCrawlerTest {
     public static void main(String[] args) {
         MyCrawlerConfig config = new MyCrawlerConfig();
         config.setNumberOfCrawler(5);
-        config.setVisitDelay(3000);
+        config.setVisitDelay(200);
 
 
         config.addSeedURL("http://cn.dealmoon.com/");

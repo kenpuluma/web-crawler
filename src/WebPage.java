@@ -48,21 +48,4 @@ public class WebPage {
         this.text = text;
     }
 
-    public String findDescription() {
-        if (this.text.length() < 60)
-            return this.text;
-
-        String[] strings = this.text.split(" ");
-        String subStr = "";
-        for (String string : strings) {
-            if (string.length() > 60) {
-                if (subStr.length() < 60) {
-                    subStr += string;
-                }
-                return string;
-            }
-        }
-
-        return subStr;
-    }
 }

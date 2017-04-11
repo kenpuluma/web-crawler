@@ -13,13 +13,45 @@ import java.util.List;
  */
 public class Frontier {
     // TODO: 2017/4/9 NoSQL database
+
+    /**
+     * A list to store all the web pages
+     * need to be visited in the future
+     */
     private List<WebURL> workQueue;
+
+    /**
+     * A list to store all the web pages that
+     * are processing right now by worker threads
+     */
     private List<WebURL> inProgressQueue;
+
+    /**
+     * A list to store all the hash for visited pages
+     * Use HashSet to improve performance
+     */
     private HashSet<String> hashSet;
-    private final Object mutex = new Object();
-    private int maxPages;
+
+    /**
+     * Whether the crawling is limited by number of pages
+     */
     private boolean pageLimit;
 
+    /**
+     * Page number limit for crawling
+     */
+    private int maxPages;
+
+
+    private final Object mutex = new Object();
+
+
+    /**
+     * Default constructor
+     * Set pageLimit to false if there is no limit on page number
+     *
+     * @param maxPages Maximum number of pages for crawling
+     */
     public Frontier(int maxPages) {
         this.maxPages = maxPages;
         if (maxPages < 0) {
@@ -46,32 +78,59 @@ public class Frontier {
         this.workQueue.addAll(workQueue);
     }
 
+    /**
+     * Schedule all the outgoing links to the workQueue
+     * Links will be tested against the shouldVisit rule first
+     *
+     * @param links  Extracted links from jsoup class
+     * @param depth  Depth for these links
+     * @param config The config of crawler defined by user
+     * @throws NoSuchAlgorithmException on getHash failed
+     */
     public void scheduleWork(Elements links, short depth, CrawlerConfig config) throws NoSuchAlgorithmException {
         synchronized (mutex) {
+
+            // scan all the links
             for (Element link : links) {
+                // check whether there is a limit on number of pages
                 if (pageLimit) {
                     if (maxPages < 0)
                         break;
-                    maxPages--;
+                    else
+                        maxPages--;
                 }
+
                 WebURL url = new WebURL(link.attr("abs:href"), depth);
-                // TODO: 2017/4/9 robots rule
+
+                // test against shouldVisit rule
                 if (config.shouldVisit(url)) {
+                    // test if page has met before
                     // TODO: 2017/4/9 save hash to disk
                     if (hashSet.add(getHash(url.getUrl())))
                         workQueue.add(url);
                 }
-            }
+            } // end of scan
         }
-
     }
 
+    /**
+     * Return a list of links for worker thread to process next
+     *
+     * @param size         How many pages should be retrieved for one time
+     * @param crawlerQueue Sub workQueue for single thread
+     */
     public void getNextURL(int size, List<WebURL> crawlerQueue) {
         synchronized (mutex) {
+            // return if there is no jobs in queue
             if (workQueue.size() == 0) {
                 return;
             }
+
+            // assign job to worker thread
+            // remove it from main workQueue and add it to inProgressQueue
+
             // TODO: 2017/4/9 multiple retrieval
+
             // crawlerQueue.addAll(workQueue.subList(0, size));
             crawlerQueue.add(workQueue.get(0));
             inProgressQueue.addAll(crawlerQueue);
@@ -79,13 +138,28 @@ public class Frontier {
         }
     }
 
+    /**
+     * Remove the page in inProgressQueue if it has been processed
+     *
+     * @param url Visited page
+     */
     public void setProgressed(WebURL url) {
         inProgressQueue.remove(url);
     }
 
+    /**
+     * Return the hashcode for a url
+     *
+     * @param url Url for website in String
+     * @return The hashcode for the url
+     * @throws NoSuchAlgorithmException On wrong hash method
+     */
     public String getHash(String url) throws NoSuchAlgorithmException {
+        // use md5 for now
         MessageDigest md = MessageDigest.getInstance("md5");
         md.update(url.getBytes());
+
+        // convert byte stream to String
         return new BigInteger(1, md.digest()).toString(16);
     }
 
