@@ -1,4 +1,5 @@
 import org.apache.http.HttpHost;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -9,6 +10,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.Scanner;
 
 /**
  * Created by Lanslot on 2017/4/11.
@@ -67,10 +69,11 @@ public class HttpResponseClient {
      * @throws IOException          On failed to execute http request
      * @throws InterruptedException On thread fail to sleep
      */
-    public HTTPResponseResult getResponse(WebURL url, long visitDelay) throws IOException, InterruptedException {
+    public String getResponse(WebURL url, long visitDelay) throws IOException, InterruptedException {
 
         HttpUriRequest httpUriRequest = null;
         HTTPResponseResult responseResult = new HTTPResponseResult();
+        String html = null;
 
         try {
             // wait for politeness delay
@@ -89,13 +92,35 @@ public class HttpResponseClient {
             responseResult.setResponseHeaders(httpResponse.getAllHeaders());
             responseResult.setHttpEntity(httpResponse.getEntity());
 
+            // do something according to the response
+            // TODO: 2017/4/9 response to other code
+            if (responseResult.getStatusCode() == HttpStatus.SC_OK) {   // is 200
+                html = fetch(responseResult);
+            }
+
             httpResponse.close();
 
         } finally {
             if (responseResult.getHttpEntity() == null && httpUriRequest != null)
                 httpUriRequest.abort();
         }
-        return responseResult;
+        return html;
     }
 
+    /**
+     * Get html content from the response
+     *
+     * @param responseResult Response of the connection
+     * @return Html content of the page
+     * @throws IOException On failed to read content
+     */
+    public String fetch(HTTPResponseResult responseResult) throws IOException {
+        Scanner scanner = new Scanner(responseResult.getHttpEntity().getContent());
+        StringBuilder stringBuilder = new StringBuilder();
+
+        while (scanner.hasNext()) {
+            stringBuilder.append(scanner.nextLine() + "\n");
+        }
+        return stringBuilder.toString();
+    }
 }

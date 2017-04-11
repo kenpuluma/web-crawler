@@ -1,5 +1,4 @@
 import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
@@ -14,7 +13,6 @@ import java.nio.charset.CharsetEncoder;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 /**
  * Created by Lanslot on 2017/3/25.
@@ -88,11 +86,11 @@ public class WebCrawler implements Runnable {
                 }
             }
 
-            // do something when result is large
-            // TODO: 2017/4/9 save to disk maybe
-            if (resultPages.size() > 10) {
-                saveToDisk();
-            }
+            // // do something when result is large
+            // // TODO: 2017/4/9 save to disk maybe
+            // if (resultPages.size() > 50) {
+            //     saveToDisk();
+            // }
         }   // end of while loop
     }
 
@@ -103,45 +101,24 @@ public class WebCrawler implements Runnable {
      */
     public void visit(WebURL url) {
         try {
-            HTTPResponseResult responseResult = responseClient.getResponse(url, config.getVisitDelay());
 
-            // do something according to the response
-            // TODO: 2017/4/9 response to other code
-            if (responseResult.getStatusCode() == HttpStatus.SC_OK) {   // is 200
+            // get html content
+            String html = responseClient.getResponse(url, config.getVisitDelay());
 
-                // get html content
-                String html = fetch(responseResult);
-
+            if (html != null) {
                 // get outgoing links
                 Elements links = parse(html, url.getUrl());
 
                 // schedule links if not exceed the depth
                 if (config.getMaxDepth() < 0 || url.getDepth() + 1 < config.getMaxDepth())
                     frontier.scheduleWork(links, (short) (url.getDepth() + 1), config);
+
+                System.out.println("Visited: " + url.getUrl());
             }
-            System.out.println("Visited: " + url.getUrl());
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
-    /**
-     * Get html content from the response
-     *
-     * @param responseResult Response of the connection
-     * @return Html content of the page
-     * @throws IOException On failed to read content
-     */
-    public String fetch(HTTPResponseResult responseResult) throws IOException {
-        Scanner scanner = new Scanner(responseResult.getHttpEntity().getContent());
-        StringBuffer stringBuffer = new StringBuffer();
-
-        while (scanner.hasNext()) {
-            stringBuffer.append(scanner.nextLine() + "\n");
-        }
-        return stringBuffer.toString();
-    }
-
 
     /**
      * Remove all the html tags and undesired contents from html text
@@ -165,7 +142,7 @@ public class WebCrawler implements Runnable {
         // get the description from the text
         String description = findDescription(plaintext);
         // get the hashcode from the url
-        String hashCode = frontier.getHash(page.getUrl());
+        String hashCode = frontier.getHash(url);
 
         // store all the results
         page.setUrl(url);
@@ -176,7 +153,7 @@ public class WebCrawler implements Runnable {
 
         // add it to the result list
         // TODO: 2017/4/9 fix missing or garbled text
-        if (page.getTitle() != null && page.getText() != null)
+        if (page.getTitle().length() > 0 && page.getText().length() > 0)
             resultPages.add(page);
 
         return document.select("a[href]");
@@ -220,7 +197,7 @@ public class WebCrawler implements Runnable {
 
                 // use utf-8 as encoder
                 CharsetEncoder encoder = Charset.forName("UTF-8").newEncoder();
-                OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream("./tmp.dat"), encoder);
+                OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream("./tmp.dat", true), encoder);
 
                 // get a JSON object from the result list
                 JSONObject main = parseToJSON();

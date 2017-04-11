@@ -92,14 +92,6 @@ public class Frontier {
 
             // scan all the links
             for (Element link : links) {
-                // check whether there is a limit on number of pages
-                if (pageLimit) {
-                    if (maxPages < 0)
-                        break;
-                    else
-                        maxPages--;
-                }
-
                 WebURL url = new WebURL(link.attr("abs:href"), depth);
 
                 // test against shouldVisit rule
@@ -126,12 +118,16 @@ public class Frontier {
                 return;
             }
 
+            // check whether there is a limit on number of pages
+            if (pageLimit) {
+                if (maxPages < 0)
+                    return;
+                maxPages--;
+            }
+
             // assign job to worker thread
             // remove it from main workQueue and add it to inProgressQueue
-
             // TODO: 2017/4/9 multiple retrieval
-
-            // crawlerQueue.addAll(workQueue.subList(0, size));
             crawlerQueue.add(workQueue.get(0));
             inProgressQueue.addAll(crawlerQueue);
             workQueue.removeAll(crawlerQueue);
