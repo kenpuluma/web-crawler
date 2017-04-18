@@ -87,6 +87,7 @@ public class HttpResponseClient {
 
             // establish http connection
             httpUriRequest = new HttpGet(url.getUrl());
+            httpUriRequest.addHeader("Content-Type", "charset=UTF-8");
             CloseableHttpResponse httpResponse = this.httpClient.execute(httpUriRequest);
             responseResult.setStatusCode(httpResponse.getStatusLine().getStatusCode());
             responseResult.setResponseHeaders(httpResponse.getAllHeaders());
@@ -115,7 +116,7 @@ public class HttpResponseClient {
      * @throws IOException On failed to read content
      */
     public String fetch(HTTPResponseResult responseResult) throws IOException {
-        Scanner scanner = new Scanner(responseResult.getHttpEntity().getContent());
+        Scanner scanner = new Scanner(responseResult.getHttpEntity().getContent(), "UTF-8");
         StringBuilder stringBuilder = new StringBuilder();
 
         while (scanner.hasNext()) {

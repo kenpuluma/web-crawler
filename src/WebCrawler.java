@@ -3,6 +3,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import java.io.FileOutputStream;
@@ -86,11 +88,11 @@ public class WebCrawler implements Runnable {
                 }
             }
 
-            // // do something when result is large
-            // // TODO: 2017/4/9 save to disk maybe
-            // if (resultPages.size() > 50) {
-            //     saveToDisk();
-            // }
+            // do something when result is large
+            // TODO: 2017/4/9 save to disk maybe
+            if (resultPages.size() > 0) {
+                saveToDisk();
+            }
         }   // end of while loop
     }
 
@@ -133,10 +135,27 @@ public class WebCrawler implements Runnable {
         WebPage page = new WebPage();
 
         // use Jsoup library to parse text
-        Document document = Jsoup.parse(html, "ISO-8859-15");
+        Document document = Jsoup.parse(html, "UTF-8");
+        Elements tags = document.select("*");
 
         // get plain text
-        String plaintext = document.text();
+        // String plaintext = document.text();
+        StringBuilder stringBuilder = new StringBuilder();
+
+        char illegal = 65533;
+        for (Element tag : tags) {
+            for (TextNode tn : tag.textNodes()) {
+                String tagText = tn.text().trim();
+                if (tagText.contains(String.valueOf(illegal)))
+                    return document.select("a[href]");
+
+                if (tagText.length() > 0) {
+                    stringBuilder.append(tagText).append(' ');
+                }
+            }
+        }
+        String plaintext = stringBuilder.toString();
+
         // remove all the line separator or quotation mark
         plaintext = plaintext.replaceAll("\\s+|\"+", " ");
         // get the description from the text
@@ -171,20 +190,31 @@ public class WebCrawler implements Runnable {
             return text;
 
         String[] strings = text.split(" ");
-        String subStr = "";
+        String result = "";
+        StringBuilder substr = new StringBuilder();
+        int maxLength = 0;
 
         // find the first sentence longer than 60 words
         // or add up the first several sentence when no one is long enough
         for (String string : strings) {
-            if (string.length() > 60) {
-                if (subStr.length() < 60) {
-                    subStr += string;
-                }
-                return string;
+            if (string.length() > maxLength) {
+                result = string;
+                maxLength = result.length();
+            }
+            if (substr.length() < 75 && string.length() > 0)
+                substr.append(string).append(' ');
+        }
+
+        if (result.length() > 75) {
+            String[] strings1 = result.split(" ");
+            substr = new StringBuilder();
+            for (String string : strings1) {
+                if (substr.length() < 75)
+                    substr.append(string).append(' ');
             }
         }
 
-        return subStr;
+        return substr.toString();
     }
 
     /**
@@ -197,7 +227,7 @@ public class WebCrawler implements Runnable {
 
                 // use utf-8 as encoder
                 CharsetEncoder encoder = Charset.forName("UTF-8").newEncoder();
-                OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream("./tmp.dat", true), encoder);
+                OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream("G:\\cn1", true), encoder);
 
                 // get a JSON object from the result list
                 JSONObject main = parseToJSON();

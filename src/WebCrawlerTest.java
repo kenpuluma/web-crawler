@@ -7,7 +7,7 @@ class MyCrawlerConfig extends CrawlerConfig {
     public boolean shouldVisit(WebURL url) {
         String href = url.getUrl().toLowerCase();
 
-        return href.contains("cn.dealmoon.com");
+        return href.contains("sports.sina.com.cn");
     }
 }
 
@@ -15,14 +15,13 @@ class MyCrawlerConfig extends CrawlerConfig {
 public class WebCrawlerTest {
     public static void main(String[] args) {
         MyCrawlerConfig config = new MyCrawlerConfig();
-        config.setNumberOfCrawler(5);
+        config.setNumberOfCrawler(7);
         config.setVisitDelay(-1);
-        config.setMaxPages(5000);
+        config.setMaxPages(-1);
 
 
-        config.addSeedURL("http://cn.dealmoon.com/");
-        config.addSeedURL("http://cn.dealmoon.com/Electronics");
-        config.addSeedURL("http://cn.dealmoon.com/Home-Garden");
+        config.addSeedURL("http://sports.sina.com.cn/");
+
 
         CrawlerMonitor crawlerMonitor = new CrawlerMonitor(config);
         crawlerMonitor.start();
