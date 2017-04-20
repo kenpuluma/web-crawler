@@ -54,6 +54,10 @@ public class CrawlerConfig {
      */
     private int proxyPort;
 
+    /**
+     * Path to save JSON results
+     */
+    private String filePath = "./tmp";
 
     private int socketTimeout = 20000;
     private int connectionTimeout = 30000;
@@ -102,6 +106,10 @@ public class CrawlerConfig {
         return proxyPort;
     }
 
+    public String getFilePath() {
+        return filePath;
+    }
+
     public void setMaxDepth(int maxDepth) {
         this.maxDepth = maxDepth;
     }
@@ -128,6 +136,10 @@ public class CrawlerConfig {
 
     public void setNumberOfCrawler(int numberOfCrawler) {
         this.numberOfCrawler = numberOfCrawler;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 
     /**

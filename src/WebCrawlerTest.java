@@ -18,6 +18,7 @@ public class WebCrawlerTest {
         config.setNumberOfCrawler(7);
         config.setVisitDelay(-1);
         config.setMaxPages(-1);
+        config.setFilePath("C:\\Cache\\cs609\\en");
 
 
         config.addSeedURL("http://www.espn.com");

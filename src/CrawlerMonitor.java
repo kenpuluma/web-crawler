@@ -19,6 +19,7 @@ public class CrawlerMonitor {
     private HttpResponseClient responseClient;
     private CrawlerConfig config;
     private Object mutex = new Object();
+    private List<WebPage> resultPages;
 
     /**
      * Default constructor
@@ -30,6 +31,7 @@ public class CrawlerMonitor {
         this.config = config;
         this.frontier = new Frontier(this.config.getMaxPages());
         this.responseClient = new HttpResponseClient(this.config);
+        this.resultPages = new ArrayList<>();
     }
 
     /**
@@ -88,15 +90,9 @@ public class CrawlerMonitor {
                         if (resultSize > 100) {
                             for (WebCrawler crawler : crawlers) {
                                 crawler.setWaitingForSave(true);
-
-                                // wait until current work finished
-                                while (!crawler.isWaiting()) {
-                                }
-
-                                saveToDisk(crawler.getResultPages());
-                                crawler.clearResults();
-                                crawler.setWaitingForSave(false);
+                                resultPages.addAll(crawler.getResultPages());
                             }
+                            saveToDisk(this.resultPages, this.config.getFilePath());
                         }
 
 
@@ -142,15 +138,15 @@ public class CrawlerMonitor {
     /**
      * Save JSON results to disk
      */
-    public synchronized void saveToDisk(List<WebPage> resultPages) {
+    public synchronized void saveToDisk(List<WebPage> pages, String filePath) {
         try {
 
             // use utf-8 as encoder
             CharsetEncoder encoder = Charset.forName("UTF-8").newEncoder();
-            OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream("D:\\en", true), encoder);
+            OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(filePath, true), encoder);
 
             // get a JSON object from the result list
-            JSONObject main = parseToJSON(resultPages);
+            JSONObject main = parseToJSON(pages);
 
             // remove all unicode characters
             String string = main.toString();
@@ -171,12 +167,13 @@ public class CrawlerMonitor {
      *
      * @return JSON result
      */
-    public JSONObject parseToJSON(List<WebPage> resultPages) {
+    public JSONObject parseToJSON(List<WebPage> pages) {
         JSONObject main = new JSONObject();
         JSONArray page = new JSONArray();
 
         // put all the results in page array
-        for (WebPage webPage : resultPages) {
+        while (!pages.isEmpty()) {
+            WebPage webPage = pages.remove(0);
             JSONObject object = new JSONObject();
             object.put("hash", webPage.getHash());
             object.put("url", webPage.getUrl());
