@@ -12,7 +12,7 @@ public class WebURL {
     }
 
     public String getUrl() {
-        return url;
+        return this.url.replace(" ","%20");
     }
 
     public short getDepth() {

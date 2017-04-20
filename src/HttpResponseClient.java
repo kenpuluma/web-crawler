@@ -71,6 +71,9 @@ public class HttpResponseClient {
      */
     public String getResponse(WebURL url, long visitDelay) throws IOException, InterruptedException {
 
+        if (url.getUrl() == null)
+            return null;
+
         HttpUriRequest httpUriRequest = null;
         HTTPResponseResult responseResult = new HTTPResponseResult();
         String html = null;

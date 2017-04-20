@@ -1,17 +1,9 @@
-import org.apache.commons.lang.StringEscapeUtils;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,12 +19,21 @@ public class WebCrawler implements Runnable {
     private CrawlerConfig config;
     private Frontier frontier;
     private HttpResponseClient responseClient;
-    private final Object mutex = new Object();
+
+    /**
+     * Whether the thread is waiting for save results
+     */
+    private boolean waitingForSave;
 
     /**
      * Whether the thread is waiting for frontier to assign url
      */
     private boolean waitingForURL;
+
+    /**
+     * Whether the thread is waiting
+     */
+    private boolean waiting;
 
     /**
      * Store a list of parsed pages
@@ -52,10 +53,25 @@ public class WebCrawler implements Runnable {
         this.config = config;
         this.frontier = frontier;
         this.responseClient = responseClient;
+        this.waitingForURL = false;
+        this.waitingForSave = false;
+        this.waiting = false;
     }
 
-    public boolean isWaitingForURL() {
-        return waitingForURL;
+    public boolean isWaiting() {
+        return waiting;
+    }
+
+    public List<WebPage> getResultPages() {
+        return resultPages;
+    }
+
+    public void setWaitingForSave(boolean waitingForSave) {
+        this.waitingForSave = waitingForSave;
+    }
+
+    public void clearResults() {
+        this.resultPages.clear();
     }
 
     @Override
@@ -71,13 +87,15 @@ public class WebCrawler implements Runnable {
             this.waitingForURL = false;
 
             // wait until next round
-            if (workQueue.isEmpty()) {
+            if (waitingForSave || workQueue.isEmpty()) {
                 try {
+                    this.waiting = true;
                     Thread.sleep(3000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             } else {
+                this.waiting = false;
 
                 // visit each url
                 for (WebURL curURL : workQueue) {
@@ -88,11 +106,6 @@ public class WebCrawler implements Runnable {
                 }
             }
 
-            // do something when result is large
-            // TODO: 2017/4/9 save to disk maybe
-            if (resultPages.size() > 0) {
-                saveToDisk();
-            }
         }   // end of while loop
     }
 
@@ -201,7 +214,7 @@ public class WebCrawler implements Runnable {
                 result = string;
                 maxLength = result.length();
             }
-            if (substr.length() < 75 && string.length() > 0)
+            if (substr.length() < 75 && string.length() > 2)
                 substr.append(string).append(' ');
         }
 
@@ -217,60 +230,4 @@ public class WebCrawler implements Runnable {
         return substr.toString();
     }
 
-    /**
-     * Save JSON results to disk
-     */
-    public void saveToDisk() {
-        synchronized (mutex) {
-
-            try {
-
-                // use utf-8 as encoder
-                CharsetEncoder encoder = Charset.forName("UTF-8").newEncoder();
-                OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream("G:\\cn1", true), encoder);
-
-                // get a JSON object from the result list
-                JSONObject main = parseToJSON();
-
-                // remove all unicode characters
-                String string = main.toString();
-                string = StringEscapeUtils.unescapeJava(string);
-
-                // write to disk
-                out.write(string + '\n');
-                out.close();
-
-                // clear the result list
-                resultPages.clear();
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        System.out.println("Results saved");
-    }
-
-    /**
-     * Parse results into JSON object
-     *
-     * @return JSON result
-     */
-    public JSONObject parseToJSON() {
-        JSONObject main = new JSONObject();
-        JSONArray page = new JSONArray();
-
-        // put all the results in page array
-        for (WebPage webPage : resultPages) {
-            JSONObject object = new JSONObject();
-            object.put("hash", webPage.getHash());
-            object.put("url", webPage.getUrl());
-            object.put("title", webPage.getTitle());
-            object.put("description", webPage.getDescription());
-            object.put("text", webPage.getText());
-            page.put(object);
-        }
-
-        main.put("pages", page);
-        return main;
-    }
 }
