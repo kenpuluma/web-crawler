@@ -59,6 +59,12 @@ public class CrawlerConfig {
      */
     private String filePath = "./tmp";
 
+    /**
+     * Number of pages will be processed to analyzer
+     * During processing, all the crawler threads will be paused
+     */
+    private int numberOfProcess = 50;
+
     private int socketTimeout = 20000;
     private int connectionTimeout = 30000;
 
@@ -110,6 +116,10 @@ public class CrawlerConfig {
         return filePath;
     }
 
+    public int getNumberOfProcess() {
+        return numberOfProcess;
+    }
+
     public void setMaxDepth(int maxDepth) {
         this.maxDepth = maxDepth;
     }
@@ -140,6 +150,10 @@ public class CrawlerConfig {
 
     public void setFilePath(String filePath) {
         this.filePath = filePath;
+    }
+
+    public void setNumberOfProcess(int numberOfProcess) {
+        this.numberOfProcess = numberOfProcess;
     }
 
     /**

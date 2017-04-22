@@ -82,17 +82,36 @@ public class CrawlerMonitor {
                                 crawlers.remove(i);
                                 crawlers.add(i, crawler);
                                 System.out.printf("Crawler %d started\n", i);
-                            } else if (!crawlers.get(i).isWaiting()) {    // thread is working
+                            } else if (!crawlers.get(i).isWaitingForURL()) {    // thread is working
                                 isWorking = true;
                             }
                         }
 
-                        if (resultSize > 100) {
+                        if (resultSize > config.getNumberOfProcess()) {
                             for (WebCrawler crawler : crawlers) {
                                 crawler.setWaitingForSave(true);
+
+                                while (!crawler.isWaiting()) {
+
+                                }
+
                                 resultPages.addAll(crawler.getResultPages());
+                                crawler.clearResults();
                             }
-                            saveToDisk(this.resultPages, this.config.getFilePath());
+
+                            Global.hasJSON = true;
+
+                            saveToDisk(resultPages, this.config.getFilePath());
+
+                            Global.hasJSON = false;
+
+                            while (Global.hasJSON) {
+                                Thread.sleep(config.getThreadMonitorDelay());
+                            }
+
+                            for (WebCrawler crawler : crawlers) {
+                                crawler.setWaitingForSave(false);
+                            }
                         }
 
 
@@ -101,7 +120,7 @@ public class CrawlerMonitor {
                             System.out.println("No one is working");
                             Thread.sleep(config.getThreadMonitorDelay());
                             for (int i = 0; i < threads.size(); i++) {
-                                if (threads.get(i).isAlive() && !crawlers.get(i).isWaiting()) {
+                                if (threads.get(i).isAlive() && !crawlers.get(i).isWaitingForURL()) {
                                     isWorking = true;
                                 }
                             }
@@ -138,7 +157,7 @@ public class CrawlerMonitor {
     /**
      * Save JSON results to disk
      */
-    public synchronized void saveToDisk(List<WebPage> pages, String filePath) {
+    public synchronized void saveToDisk(List<WebPage> resultPages, String filePath) {
         try {
 
             // use utf-8 as encoder
@@ -146,7 +165,7 @@ public class CrawlerMonitor {
             OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(filePath, true), encoder);
 
             // get a JSON object from the result list
-            JSONObject main = parseToJSON(pages);
+            JSONObject main = parseToJSON(resultPages);
 
             // remove all unicode characters
             String string = main.toString();
@@ -167,13 +186,13 @@ public class CrawlerMonitor {
      *
      * @return JSON result
      */
-    public JSONObject parseToJSON(List<WebPage> pages) {
+    public JSONObject parseToJSON(List<WebPage> resultPages) {
         JSONObject main = new JSONObject();
         JSONArray page = new JSONArray();
 
         // put all the results in page array
-        while (!pages.isEmpty()) {
-            WebPage webPage = pages.remove(0);
+        while (!resultPages.isEmpty()) {
+            WebPage webPage = resultPages.remove(0);
             JSONObject object = new JSONObject();
             object.put("hash", webPage.getHash());
             object.put("url", webPage.getUrl());

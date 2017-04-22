@@ -30,6 +30,8 @@ public class WebCrawler implements Runnable {
      */
     private boolean waitingForURL;
 
+    private boolean waiting;
+
     /**
      * Store a list of parsed pages
      */
@@ -50,10 +52,15 @@ public class WebCrawler implements Runnable {
         this.responseClient = responseClient;
         this.waitingForURL = false;
         this.waitingForSave = false;
+        this.waiting = false;
     }
 
     public boolean isWaiting() {
-        return this.waitingForSave || this.waitingForURL;
+        return this.waiting;
+    }
+
+    public boolean isWaitingForURL() {
+        return waitingForURL;
     }
 
     public List<WebPage> getResultPages() {
@@ -83,11 +90,13 @@ public class WebCrawler implements Runnable {
             // wait until next round
             if (waitingForSave || workQueue.isEmpty()) {
                 try {
+                    this.waiting = true;
                     Thread.sleep(3000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             } else {
+                this.waiting = false;
 
                 // visit each url
                 for (WebURL curURL : workQueue) {
