@@ -153,9 +153,9 @@ public class WebCrawler implements Runnable {
         Elements tags = document.select("*");
 
         // get plain text
-        // String plaintext = document.text();
         StringBuilder stringBuilder = new StringBuilder();
 
+        // find characters not valid in utf-8 meanwhile
         char illegal = 65533;
         for (Element tag : tags) {
             for (TextNode tn : tag.textNodes()) {
@@ -200,7 +200,7 @@ public class WebCrawler implements Runnable {
     public String findDescription(String text) {
 
         // return whole page if it's too short
-        if (text.length() < 60)
+        if (text.length() < config.getDescriptionLength())
             return text;
 
         String[] strings = text.split(" ");
@@ -208,22 +208,22 @@ public class WebCrawler implements Runnable {
         StringBuilder substr = new StringBuilder();
         int maxLength = 0;
 
-        // find the first sentence longer than 60 words
-        // or add up the first several sentence when no one is long enough
+        // find the first several sentences in longest paragraph
+        // or add up the first several paragraphs when no one is long enough
         for (String string : strings) {
             if (string.length() > maxLength) {
                 result = string;
                 maxLength = result.length();
             }
-            if (substr.length() < 75 && string.length() > 2)
+            if (substr.length() < config.getDescriptionLength() && string.length() > 4)
                 substr.append(string).append(' ');
         }
 
-        if (result.length() > 75) {
+        if (result.length() > config.getDescriptionLength()) {
             String[] strings1 = result.split(" ");
             substr = new StringBuilder();
             for (String string : strings1) {
-                if (substr.length() < 75)
+                if (substr.length() < config.getDescriptionLength())
                     substr.append(string).append(' ');
             }
         }

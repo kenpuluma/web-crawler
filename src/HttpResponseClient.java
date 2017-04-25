@@ -123,7 +123,7 @@ public class HttpResponseClient {
         StringBuilder stringBuilder = new StringBuilder();
 
         while (scanner.hasNext()) {
-            stringBuilder.append(scanner.nextLine() + "\n");
+            stringBuilder.append(scanner.nextLine()).append('\n');
         }
         return stringBuilder.toString();
     }

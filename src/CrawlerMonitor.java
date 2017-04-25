@@ -18,7 +18,7 @@ public class CrawlerMonitor {
     private Frontier frontier;
     private HttpResponseClient responseClient;
     private CrawlerConfig config;
-    private Object mutex = new Object();
+    private final Object mutex = new Object();
     private List<WebPage> resultPages;
 
     /**
@@ -92,7 +92,7 @@ public class CrawlerMonitor {
                                 crawler.setWaitingForSave(true);
 
                                 while (!crawler.isWaiting()) {
-
+                                    Thread.sleep(10);
                                 }
 
                                 resultPages.addAll(crawler.getResultPages());

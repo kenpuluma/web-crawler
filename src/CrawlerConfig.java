@@ -65,6 +65,11 @@ public class CrawlerConfig {
      */
     private int numberOfProcess = 50;
 
+    /**
+     * Minimum number of words for description
+     */
+    private int descriptionLength=75;
+
     private int socketTimeout = 20000;
     private int connectionTimeout = 30000;
 
@@ -120,6 +125,10 @@ public class CrawlerConfig {
         return numberOfProcess;
     }
 
+    public int getDescriptionLength() {
+        return descriptionLength;
+    }
+
     public void setMaxDepth(int maxDepth) {
         this.maxDepth = maxDepth;
     }
@@ -154,6 +163,10 @@ public class CrawlerConfig {
 
     public void setNumberOfProcess(int numberOfProcess) {
         this.numberOfProcess = numberOfProcess;
+    }
+
+    public void setDescriptionLength(int descriptionLength) {
+        this.descriptionLength = descriptionLength;
     }
 
     /**
