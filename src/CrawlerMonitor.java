@@ -2,6 +2,7 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -29,9 +30,13 @@ public class CrawlerMonitor {
      */
     public CrawlerMonitor(CrawlerConfig config) {
         this.config = config;
-        this.frontier = new Frontier(this.config.getMaxPages());
+        this.frontier = new Frontier(this.config);
         this.responseClient = new HttpResponseClient(this.config);
         this.resultPages = new ArrayList<>();
+    }
+
+    public List<WebPage> getResultPages() {
+        return resultPages;
     }
 
     /**
@@ -40,7 +45,7 @@ public class CrawlerMonitor {
     public void start() {
 
         // Fill frontier with seed urls
-        frontier.setWorkQueue(config.getSeedURL());
+        frontier.setWorkQueue(config);
 
         List<Thread> threads = new ArrayList<>();
         List<WebCrawler> crawlers = new ArrayList<>();
@@ -87,33 +92,37 @@ public class CrawlerMonitor {
                             }
                         }
 
+                        // process result
                         if (resultSize > config.getNumberOfProcess()) {
+
+                            // wait for worker thread stop
                             for (WebCrawler crawler : crawlers) {
                                 crawler.setWaitingForSave(true);
-
                                 while (!crawler.isWaiting()) {
                                     Thread.sleep(10);
                                 }
 
+                                // take over all the results
                                 resultPages.addAll(crawler.getResultPages());
                                 crawler.clearResults();
                             }
 
-                            Global.hasJSON = true;
-
-                            saveToDisk(resultPages, this.config.getFilePath());
-
-                            Global.hasJSON = false;
-
-                            while (Global.hasJSON) {
-                                Thread.sleep(config.getThreadMonitorDelay());
+                            // save json object to disk in offline mode
+                            // or wait for analyzer in online mode
+                            if (config.isOffline()) {
+                                saveToDisk(resultPages, config.getWorkPath());
+                            } else {
+                                Global.hasJSON = true;
+                                while (Global.hasJSON) {
+                                    Thread.sleep(config.getThreadMonitorDelay());
+                                }
                             }
 
+                            // wake up all the worker threads
                             for (WebCrawler crawler : crawlers) {
                                 crawler.setWaitingForSave(false);
                             }
                         }
-
 
                         // wait for a period of time to make sure
                         if (!isWorking) {
@@ -179,6 +188,10 @@ public class CrawlerMonitor {
             e.printStackTrace();
         }
         System.out.println("Results saved");
+    }
+
+    public void deleteFiles(String path){
+        File dir=new File(path);
     }
 
     /**

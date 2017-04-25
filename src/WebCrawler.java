@@ -175,7 +175,7 @@ public class WebCrawler implements Runnable {
         // get the description from the text
         String description = findDescription(plaintext);
         // get the hashcode from the url
-        String hashCode = frontier.getHash(url);
+        int hashCode = frontier.getHash(url);
 
         // store all the results
         page.setUrl(url);

@@ -56,8 +56,26 @@ public class CrawlerConfig {
 
     /**
      * Path to save JSON results
+     * It's only needed for offline mode
      */
-    private String filePath = "./tmp";
+    private String filePath = "./tmp.dat";
+
+    /**
+     * Path to save database files
+     */
+    private String workPath = "./frontier";
+
+    /**
+     * Switch for offline mode and online mode
+     * In offline mode, the crawler will store all the JSON objects in disk
+     * In online mode, the crawler will pass the JSON objects to analyzer
+     */
+    private boolean offline=true;
+
+    /**
+     * Whether the crawler will work from last run
+     */
+    private boolean resumable = false;
 
     /**
      * Number of pages will be processed to analyzer
@@ -68,7 +86,7 @@ public class CrawlerConfig {
     /**
      * Minimum number of words for description
      */
-    private int descriptionLength=75;
+    private int descriptionLength = 75;
 
     private int socketTimeout = 20000;
     private int connectionTimeout = 30000;
@@ -121,6 +139,18 @@ public class CrawlerConfig {
         return filePath;
     }
 
+    public String getWorkPath() {
+        return workPath;
+    }
+
+    public boolean isOffline() {
+        return offline;
+    }
+
+    public boolean isResumable() {
+        return resumable;
+    }
+
     public int getNumberOfProcess() {
         return numberOfProcess;
     }
@@ -159,6 +189,18 @@ public class CrawlerConfig {
 
     public void setFilePath(String filePath) {
         this.filePath = filePath;
+    }
+
+    public void setWorkPath(String workPath) {
+        this.workPath = workPath;
+    }
+
+    public void setOffline(boolean offline) {
+        this.offline = offline;
+    }
+
+    public void setResumable(boolean resumable) {
+        this.resumable = resumable;
     }
 
     public void setNumberOfProcess(int numberOfProcess) {

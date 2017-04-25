@@ -1,8 +1,9 @@
+import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.EnvironmentConfig;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.math.BigInteger;
-import java.security.MessageDigest;
+import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -44,22 +45,32 @@ public class Frontier {
 
 
     private final Object mutex = new Object();
-
+    private UrlDB urlDB;
 
     /**
      * Default constructor
      * Set pageLimit to false if there is no limit on page number
      *
-     * @param maxPages Maximum number of pages for crawling
+     * @param config The config of crawler defined by user
      */
-    public Frontier(int maxPages) {
-        this.maxPages = maxPages;
+    public Frontier(CrawlerConfig config) {
+        this.maxPages = config.getMaxPages();
         if (maxPages < 0) {
             this.pageLimit = false;
         } else this.pageLimit = true;
         this.workQueue = new ArrayList<>();
         this.inProgressQueue = new ArrayList<>();
         this.hashSet = new HashSet<>();
+
+        EnvironmentConfig envConfig = new EnvironmentConfig();
+        envConfig.setAllowCreate(true);
+        envConfig.setTransactional(config.isResumable());
+
+        DatabaseConfig dbConfig = new DatabaseConfig();
+        dbConfig.setAllowCreate(true);
+        dbConfig.setTransactional(config.isResumable());
+
+        this.urlDB = new UrlDB(envConfig, dbConfig, config.getFilePath());
     }
 
     public List<WebURL> getWorkQueue() {
@@ -74,8 +85,20 @@ public class Frontier {
         return maxPages;
     }
 
-    public void setWorkQueue(List<WebURL> workQueue) {
-        this.workQueue.addAll(workQueue);
+    public void setWorkQueue(CrawlerConfig config) {
+        for (WebURL url : config.getSeedURL()) {
+            if (config.shouldVisit(url)) {
+                try {
+                    if (urlDB.getID(url.getUrl()) == -1) {
+                        workQueue.add(url);
+                        urlDB.put(url.getUrl());
+                    }
+                } catch (UnsupportedEncodingException e) {
+                    System.out.println("Encoding error!");
+                }
+
+            }
+        }
     }
 
     /**
@@ -96,10 +119,17 @@ public class Frontier {
 
                 // test against shouldVisit rule
                 if (config.shouldVisit(url)) {
+
                     // test if page has met before
-                    // TODO: 2017/4/9 save hash to disk
-                    if (hashSet.add(getHash(url.getUrl())))
-                        workQueue.add(url);
+                    try {
+                        if (urlDB.getID(url.getUrl()) == -1) {
+                            workQueue.add(url);
+                            urlDB.put(url.getUrl());
+                        }
+                    } catch (UnsupportedEncodingException e) {
+                        System.out.println("Encoding error!");
+                    }
+
                 }
             } // end of scan
         }
@@ -143,21 +173,38 @@ public class Frontier {
         inProgressQueue.remove(url);
     }
 
+    // /**
+    //  * Return the hashcode for a url
+    //  *
+    //  * @param url Url for website in String
+    //  * @return The hashcode for the url
+    //  * @throws NoSuchAlgorithmException On wrong hash method
+    //  */
+    // public String getHash(String url) throws NoSuchAlgorithmException {
+    //     // use md5 for now
+    //     MessageDigest md = MessageDigest.getInstance("md5");
+    //     md.update(url.getBytes());
+    //
+    //     // convert byte stream to String
+    //     return new BigInteger(1, md.digest()).toString(16);
+    // }
+
     /**
      * Return the hashcode for a url
      *
      * @param url Url for website in String
      * @return The hashcode for the url
-     * @throws NoSuchAlgorithmException On wrong hash method
      */
-    public String getHash(String url) throws NoSuchAlgorithmException {
-        // use md5 for now
-        MessageDigest md = MessageDigest.getInstance("md5");
-        md.update(url.getBytes());
+    public int getHash(String url) {
+        int urlID = -1;
 
-        // convert byte stream to String
-        return new BigInteger(1, md.digest()).toString(16);
+        try {
+            urlID = urlDB.getID(url);
+        } catch (UnsupportedEncodingException e) {
+            System.out.println("Encoding error!");
+        }
+
+        return urlID;
     }
-
 
 }

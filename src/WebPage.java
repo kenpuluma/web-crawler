@@ -2,13 +2,13 @@
  * Created by Lanslot on 2017/3/28.
  */
 public class WebPage {
-    private String hash;
+    private int hash;
     private String url;
     private String title;
     private String description;
     private String text;
 
-    public String getHash() {
+    public int getHash() {
         return hash;
     }
 
@@ -28,7 +28,7 @@ public class WebPage {
         return text;
     }
 
-    public void setHash(String hash) {
+    public void setHash(int hash) {
         this.hash = hash;
     }
 
