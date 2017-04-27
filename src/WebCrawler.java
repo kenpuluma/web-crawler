@@ -4,7 +4,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -93,7 +92,7 @@ public class WebCrawler implements Runnable {
                     this.waiting = true;
                     Thread.sleep(3000);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    System.out.println("Worker thread failed to sleep!");
                 }
             } else {
                 this.waiting = false;
@@ -116,24 +115,21 @@ public class WebCrawler implements Runnable {
      * @param url Link should be visited
      */
     public void visit(WebURL url) {
-        try {
 
-            // get html content
-            String html = responseClient.getResponse(url, config.getVisitDelay());
+        // get html content
+        String html = responseClient.getResponse(url, config.getVisitDelay());
 
-            if (html != null) {
-                // get outgoing links
-                Elements links = parse(html, url.getUrl());
+        if (html != null) {
+            // get outgoing links
+            Elements links = parse(html, url.getUrl());
 
-                // schedule links if not exceed the depth
-                if (config.getMaxDepth() < 0 || url.getDepth() + 1 < config.getMaxDepth())
-                    frontier.scheduleWork(links, (short) (url.getDepth() + 1), config);
+            // schedule links if not exceed the depth
+            if (config.getMaxDepth() < 0 || url.getDepth() + 1 < config.getMaxDepth())
+                frontier.scheduleWork(links, (short) (url.getDepth() + 1), config);
 
-                System.out.println("Visited: " + url.getUrl());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Visited: " + url.getUrl());
         }
+
     }
 
     /**
@@ -142,9 +138,8 @@ public class WebCrawler implements Runnable {
      * @param html Html text from response
      * @param url  Url of the page
      * @return Outgoing links
-     * @throws NoSuchAlgorithmException on wrong hash method
      */
-    public Elements parse(String html, String url) throws NoSuchAlgorithmException {
+    public Elements parse(String html, String url) {
 
         WebPage page = new WebPage();
 
@@ -219,6 +214,7 @@ public class WebCrawler implements Runnable {
                 substr.append(string).append(' ');
         }
 
+        // add up first several sentences in longest paragraph
         if (result.length() > config.getDescriptionLength()) {
             String[] strings1 = result.split(" ");
             substr = new StringBuilder();
@@ -230,5 +226,4 @@ public class WebCrawler implements Runnable {
 
         return substr.toString();
     }
-
 }

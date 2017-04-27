@@ -66,10 +66,8 @@ public class HttpResponseClient {
      * @param url        Link should be visited
      * @param visitDelay Delay between two requests
      * @return Result of http request
-     * @throws IOException          On failed to execute http request
-     * @throws InterruptedException On thread fail to sleep
      */
-    public String getResponse(WebURL url, long visitDelay) throws IOException, InterruptedException {
+    public String getResponse(WebURL url, long visitDelay) {
 
         if (url.getUrl() == null)
             return null;
@@ -104,6 +102,10 @@ public class HttpResponseClient {
 
             httpResponse.close();
 
+        } catch (InterruptedException ine) {
+            System.out.println("Http Client failed to sleep!");
+        } catch (IOException ioe) {
+            System.out.println("Failed to execute Http request!");
         } finally {
             if (responseResult.getHttpEntity() == null && httpUriRequest != null)
                 httpUriRequest.abort();

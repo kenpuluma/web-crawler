@@ -4,7 +4,6 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
@@ -30,6 +29,22 @@ public class CrawlerMonitor {
      */
     public CrawlerMonitor(CrawlerConfig config) {
         this.config = config;
+
+        // delete previous session if not resumable
+        if (!this.config.isResumable()) {
+            deleteFiles(this.config.getWorkPath());
+            deleteFiles(this.config.getFilePath());
+            System.out.println("Cleaned folder because crawler is not resumable");
+        }
+
+        // create work folders
+        createFiles(this.config.getWorkPath(), true);
+
+        // create the result file in offline mode
+        if (this.config.isOffline()) {
+            createFiles(this.config.getFilePath(), false);
+        }
+
         this.frontier = new Frontier(this.config);
         this.responseClient = new HttpResponseClient(this.config);
         this.resultPages = new ArrayList<>();
@@ -110,9 +125,10 @@ public class CrawlerMonitor {
                             // save json object to disk in offline mode
                             // or wait for analyzer in online mode
                             if (config.isOffline()) {
-                                saveToDisk(resultPages, config.getWorkPath());
+                                saveToDisk(resultPages, config.getFilePath());
                             } else {
                                 Global.hasJSON = true;
+                                System.out.println("Waiting for analyzer");
                                 while (Global.hasJSON) {
                                     Thread.sleep(config.getThreadMonitorDelay());
                                 }
@@ -143,8 +159,8 @@ public class CrawlerMonitor {
                         }
                     }
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (InterruptedException e) {
+                System.out.println("Monitor thread failed to sleep!");
             }
         });
 
@@ -155,6 +171,7 @@ public class CrawlerMonitor {
      * Action before shutdown
      */
     public void shutdown() {
+        frontier.shutdown();
         saveOnExit();
     }
 
@@ -168,7 +185,6 @@ public class CrawlerMonitor {
      */
     public synchronized void saveToDisk(List<WebPage> resultPages, String filePath) {
         try {
-
             // use utf-8 as encoder
             CharsetEncoder encoder = Charset.forName("UTF-8").newEncoder();
             OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(filePath, true), encoder);
@@ -184,14 +200,53 @@ public class CrawlerMonitor {
             out.write(string + '\n');
             out.close();
 
-        } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Results saved");
+        } catch (Exception e) {
+            System.out.println("Failed to save results");
         }
-        System.out.println("Results saved");
     }
 
-    public void deleteFiles(String path){
-        File dir=new File(path);
+    /**
+     * Create the file or folder and folders along the path if needed
+     *
+     * @param path Path of the file or folder
+     */
+    public void createFiles(String path, boolean isFolder) {
+        try {
+            File file = new File(path);
+            if (!file.exists()) {
+                if (isFolder) {
+                    file.mkdirs();
+                } else {
+                    file.getParentFile().mkdirs();
+                    file.createNewFile();
+                }
+                System.out.println("Created: " + file.getAbsolutePath());
+            }
+        } catch (Exception e) {
+            System.out.println("Failed to create files!");
+        }
+    }
+
+    /**
+     * Delete all the files and folders under the path
+     *
+     * @param path Path of a file or folder
+     */
+    public void deleteFiles(String path) {
+        try {
+            File dir = new File(path);
+
+            if (dir.exists()) {
+                for (File file : dir.listFiles()) {
+                    file.delete();
+                }
+                dir.delete();
+                System.out.println("Deleted: " + dir.getAbsolutePath());
+            }
+        } catch (Exception e) {
+            System.out.println("Failed to delete files!");
+        }
     }
 
     /**

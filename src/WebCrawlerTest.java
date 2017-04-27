@@ -18,7 +18,6 @@ public class WebCrawlerTest {
         MyCrawlerConfig config = new MyCrawlerConfig();
 
         // do some configuration
-
         // connection config
         config.setNumberOfCrawler(7);
         config.addSeedURL("http://sports.sina.com.cn/");
@@ -32,8 +31,8 @@ public class WebCrawlerTest {
         // mode config
         config.setOffline(true);
         config.setResumable(false);
-        config.setFilePath("N:\\Temps\\frontier");
-        config.setWorkPath("N:\\Temps\\frontier\\result.dat");
+        config.setFilePath("C:\\Cache\\cs609\\frontier\\result.dat");
+        config.setWorkPath("C:\\Cache\\cs609\\frontier");
 
 
         CrawlerMonitor crawlerMonitor = new CrawlerMonitor(config);

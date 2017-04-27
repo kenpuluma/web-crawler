@@ -3,6 +3,7 @@
     <properties maven-id="com.sleepycat:je:5.0.73" />
     <CLASSES>
       <root url="jar://$MAVEN_REPOSITORY$/com/sleepycat/je/5.0.73/je-5.0.73.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/sleepycat/je/5.0.73/je-5.0.73.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

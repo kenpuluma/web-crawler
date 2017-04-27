@@ -3,10 +3,7 @@ import com.sleepycat.je.EnvironmentConfig;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.UnsupportedEncodingException;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -28,10 +25,10 @@ public class Frontier {
     private List<WebURL> inProgressQueue;
 
     /**
-     * A list to store all the hash for visited pages
-     * Use HashSet to improve performance
+     * A database to store all the hash for visited pages
+     * Use BerkeleyDB to improve performance
      */
-    private HashSet<String> hashSet;
+    private UrlDB urlDB;
 
     /**
      * Whether the crawling is limited by number of pages
@@ -45,7 +42,7 @@ public class Frontier {
 
 
     private final Object mutex = new Object();
-    private UrlDB urlDB;
+
 
     /**
      * Default constructor
@@ -55,13 +52,11 @@ public class Frontier {
      */
     public Frontier(CrawlerConfig config) {
         this.maxPages = config.getMaxPages();
-        if (maxPages < 0) {
-            this.pageLimit = false;
-        } else this.pageLimit = true;
+        this.pageLimit = (maxPages > 0);
         this.workQueue = new ArrayList<>();
         this.inProgressQueue = new ArrayList<>();
-        this.hashSet = new HashSet<>();
 
+        // setup the hash database
         EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setAllowCreate(true);
         envConfig.setTransactional(config.isResumable());
@@ -70,7 +65,7 @@ public class Frontier {
         dbConfig.setAllowCreate(true);
         dbConfig.setTransactional(config.isResumable());
 
-        this.urlDB = new UrlDB(envConfig, dbConfig, config.getFilePath());
+        this.urlDB = new UrlDB(envConfig, dbConfig, config.getWorkPath());
     }
 
     public List<WebURL> getWorkQueue() {
@@ -85,20 +80,20 @@ public class Frontier {
         return maxPages;
     }
 
+    /**
+     * Init workQueue from seed urls at the beginning
+     *
+     * @param config The config of crawler defined by user
+     */
     public void setWorkQueue(CrawlerConfig config) {
         for (WebURL url : config.getSeedURL()) {
             if (config.shouldVisit(url)) {
-                try {
-                    if (urlDB.getID(url.getUrl()) == -1) {
-                        workQueue.add(url);
-                        urlDB.put(url.getUrl());
-                    }
-                } catch (UnsupportedEncodingException e) {
-                    System.out.println("Encoding error!");
+                if (urlDB.getID(url.getUrl()) == -1) {
+                    workQueue.add(url);
+                    urlDB.put(url.getUrl());
                 }
-
             }
-        }
+        }   // end of loop
     }
 
     /**
@@ -108,9 +103,8 @@ public class Frontier {
      * @param links  Extracted links from jsoup class
      * @param depth  Depth for these links
      * @param config The config of crawler defined by user
-     * @throws NoSuchAlgorithmException on getHash failed
      */
-    public void scheduleWork(Elements links, short depth, CrawlerConfig config) throws NoSuchAlgorithmException {
+    public void scheduleWork(Elements links, short depth, CrawlerConfig config) {
         synchronized (mutex) {
 
             // scan all the links
@@ -121,13 +115,9 @@ public class Frontier {
                 if (config.shouldVisit(url)) {
 
                     // test if page has met before
-                    try {
-                        if (urlDB.getID(url.getUrl()) == -1) {
-                            workQueue.add(url);
-                            urlDB.put(url.getUrl());
-                        }
-                    } catch (UnsupportedEncodingException e) {
-                        System.out.println("Encoding error!");
+                    if (urlDB.getID(url.getUrl()) == -1) {
+                        workQueue.add(url);
+                        urlDB.put(url.getUrl());
                     }
 
                 }
@@ -197,14 +187,16 @@ public class Frontier {
      */
     public int getHash(String url) {
         int urlID = -1;
-
-        try {
-            urlID = urlDB.getID(url);
-        } catch (UnsupportedEncodingException e) {
-            System.out.println("Encoding error!");
-        }
+        urlID = urlDB.getID(url);
 
         return urlID;
+    }
+
+    /**
+     * Action before shutdown
+     */
+    public void shutdown(){
+        urlDB.closeDB();
     }
 
 }
