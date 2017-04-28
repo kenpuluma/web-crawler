@@ -70,12 +70,18 @@ public class CrawlerConfig {
      * In offline mode, the crawler will store all the JSON objects in disk
      * In online mode, the crawler will pass the JSON objects to analyzer
      */
-    private boolean offline=true;
+    private boolean offline = true;
 
     /**
      * Whether the crawler will work from last run
      */
     private boolean resumable = false;
+
+    /**
+     * Number of pages will be stored in each worker thread
+     * Worker thread will store a in memory work queue to improve performance
+     */
+    private int sizeOfWorkQueue = 50;
 
     /**
      * Number of pages will be processed to analyzer
@@ -151,6 +157,10 @@ public class CrawlerConfig {
         return resumable;
     }
 
+    public int getSizeOfWorkQueue() {
+        return sizeOfWorkQueue;
+    }
+
     public int getNumberOfProcess() {
         return numberOfProcess;
     }
@@ -201,6 +211,10 @@ public class CrawlerConfig {
 
     public void setResumable(boolean resumable) {
         this.resumable = resumable;
+    }
+
+    public void setSizeOfWorkQueue(int sizeOfWorkQueue) {
+        this.sizeOfWorkQueue = sizeOfWorkQueue;
     }
 
     public void setNumberOfProcess(int numberOfProcess) {

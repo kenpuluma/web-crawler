@@ -102,9 +102,9 @@ public class HttpResponseClient {
 
             httpResponse.close();
 
-        } catch (InterruptedException ine) {
+        } catch (InterruptedException ie) {
             System.out.println("Http Client failed to sleep!");
-        } catch (IOException ioe) {
+        } catch (Exception e) {
             System.out.println("Failed to execute Http request!");
         } finally {
             if (responseResult.getHttpEntity() == null && httpUriRequest != null)

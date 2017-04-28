@@ -130,7 +130,7 @@ public class CrawlerMonitor {
                                 Global.hasJSON = true;
                                 System.out.println("Waiting for analyzer");
                                 while (Global.hasJSON) {
-                                    Thread.sleep(config.getThreadMonitorDelay());
+                                    Thread.sleep(config.getThreadMonitorDelay() / 5);
                                 }
                             }
 
@@ -172,12 +172,6 @@ public class CrawlerMonitor {
      */
     public void shutdown() {
         frontier.shutdown();
-        saveOnExit();
-    }
-
-    // TODO: 2017/4/9 resume from exit
-    public void saveOnExit() {
-
     }
 
     /**

@@ -30,9 +30,9 @@ public class WebCrawlerTest {
 
         // mode config
         config.setOffline(true);
-        config.setResumable(false);
-        config.setFilePath("C:\\Cache\\cs609\\frontier\\result.dat");
-        config.setWorkPath("C:\\Cache\\cs609\\frontier");
+        config.setResumable(true);
+        config.setFilePath("N:\\Temps\\frontier\\result.dat");
+        config.setWorkPath("N:\\Temps\\frontier");
 
 
         CrawlerMonitor crawlerMonitor = new CrawlerMonitor(config);

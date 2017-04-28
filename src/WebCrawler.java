@@ -79,33 +79,30 @@ public class WebCrawler implements Runnable {
         while (true) {
 
             // create a sub work list to improve performance
-            List<WebURL> workQueue = new ArrayList<>(50);
+            List<WebURL> workQueue = new ArrayList<>(config.getSizeOfWorkQueue());
 
             // get work list from frontier
             this.waitingForURL = true;
-            frontier.getNextURL(workQueue.size(), workQueue);
+            frontier.getNextURL(config.getSizeOfWorkQueue(), workQueue);
             this.waitingForURL = false;
 
-            // wait until next round
-            if (waitingForSave || workQueue.isEmpty()) {
-                try {
+            // visit each url
+            for (WebURL curURL : workQueue) {
+                // wait until next round
+                if (waitingForSave || workQueue.isEmpty()) {
                     this.waiting = true;
-                    Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                    System.out.println("Worker thread failed to sleep!");
-                }
-            } else {
-                this.waiting = false;
-
-                // visit each url
-                for (WebURL curURL : workQueue) {
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException e) {
+                        System.out.println("Worker thread failed to sleep!");
+                    }
+                } else {
+                    this.waiting = false;
                     if (curURL != null) {
                         visit(curURL);
-                        frontier.setProgressed(curURL);
                     }
                 }
-            }
-
+            }   // end of for loop
         }   // end of while loop
     }
 

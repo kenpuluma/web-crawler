@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Created by Lanslot on 4/27/2017.
  */
-public class WorkQueue {
+public class WorkQueueDB {
     private Database workdb;
     private Environment env;
     private WebURLTupleBinding tupleBinding;
@@ -21,14 +21,14 @@ public class WorkQueue {
      */
     private int pageNumber;
 
-    public WorkQueue(EnvironmentConfig envConfig, DatabaseConfig dbConfig, String path) {
+    public WorkQueueDB(EnvironmentConfig envConfig, DatabaseConfig dbConfig, String path) {
         pageNumber = 0;
         resumable = envConfig.getTransactional();
         tupleBinding = new WebURLTupleBinding();
 
         File file = new File(path);
         this.env = new Environment(file, envConfig);
-        this.workdb = env.openDatabase(null, "urlDB", dbConfig);
+        this.workdb = env.openDatabase(null, "workDB", dbConfig);
     }
 
     /**
@@ -116,5 +116,11 @@ public class WorkQueue {
 
     public byte[] intToByte(int in) {
         return ByteBuffer.allocate(4).putInt(in).array();
+    }
+
+    public int getPageNumber(){
+        synchronized (mutex){
+            return pageNumber;
+        }
     }
 }

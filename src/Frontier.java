@@ -3,37 +3,20 @@ import com.sleepycat.je.EnvironmentConfig;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by Lanslot on 2017/4/8.
  */
 public class Frontier {
-    // TODO: 2017/4/9 NoSQL database
 
-    /**
-     * A list to store all the web pages
-     * need to be visited in the future
-     */
-    private List<WebURL> workQueue;
-
-    /**
-     * A list to store all the web pages that
-     * are processing right now by worker threads
-     */
-    private List<WebURL> inProgressQueue;
+    private WorkQueueDB workDB;
 
     /**
      * A database to store all the hash for visited pages
      * Use BerkeleyDB to improve performance
      */
     private UrlDB urlDB;
-
-    /**
-     * Whether the crawling is limited by number of pages
-     */
-    private boolean pageLimit;
 
     /**
      * Page number limit for crawling
@@ -52,9 +35,6 @@ public class Frontier {
      */
     public Frontier(CrawlerConfig config) {
         this.maxPages = config.getMaxPages();
-        this.pageLimit = (maxPages > 0);
-        this.workQueue = new ArrayList<>();
-        this.inProgressQueue = new ArrayList<>();
 
         // setup the hash database
         EnvironmentConfig envConfig = new EnvironmentConfig();
@@ -66,19 +46,9 @@ public class Frontier {
         dbConfig.setTransactional(config.isResumable());
 
         this.urlDB = new UrlDB(envConfig, dbConfig, config.getWorkPath());
+        this.workDB = new WorkQueueDB(envConfig, dbConfig, config.getWorkPath());
     }
 
-    public List<WebURL> getWorkQueue() {
-        return workQueue;
-    }
-
-    public List<WebURL> getInProgressQueue() {
-        return inProgressQueue;
-    }
-
-    public int getMaxPages() {
-        return maxPages;
-    }
 
     /**
      * Init workQueue from seed urls at the beginning
@@ -89,7 +59,7 @@ public class Frontier {
         for (WebURL url : config.getSeedURL()) {
             if (config.shouldVisit(url)) {
                 if (urlDB.getID(url.getUrl()) == -1) {
-                    workQueue.add(url);
+                    workDB.put(url);
                     urlDB.put(url.getUrl());
                 }
             }
@@ -116,7 +86,7 @@ public class Frontier {
 
                     // test if page has met before
                     if (urlDB.getID(url.getUrl()) == -1) {
-                        workQueue.add(url);
+                        workDB.put(url);
                         urlDB.put(url.getUrl());
                     }
 
@@ -133,34 +103,14 @@ public class Frontier {
      */
     public void getNextURL(int size, List<WebURL> crawlerQueue) {
         synchronized (mutex) {
-            // return if there is no jobs in queue
-            if (workQueue.size() == 0) {
-                return;
+            if (maxPages < 0 || (workDB.getPageNumber() + size < maxPages)) {
+                crawlerQueue.addAll(workDB.getWebURLs(size));
+                workDB.delete(size);
+            } else if (workDB.getPageNumber() < maxPages) {
+                crawlerQueue.addAll(workDB.getWebURLs(maxPages - workDB.getPageNumber()));
+                workDB.delete(maxPages - workDB.getPageNumber());
             }
-
-            // check whether there is a limit on number of pages
-            if (pageLimit) {
-                if (maxPages < 0)
-                    return;
-                maxPages--;
-            }
-
-            // assign job to worker thread
-            // remove it from main workQueue and add it to inProgressQueue
-            // TODO: 2017/4/9 multiple retrieval
-            crawlerQueue.add(workQueue.get(0));
-            inProgressQueue.addAll(crawlerQueue);
-            workQueue.removeAll(crawlerQueue);
         }
-    }
-
-    /**
-     * Remove the page in inProgressQueue if it has been processed
-     *
-     * @param url Visited page
-     */
-    public void setProgressed(WebURL url) {
-        inProgressQueue.remove(url);
     }
 
     // /**
@@ -195,7 +145,7 @@ public class Frontier {
     /**
      * Action before shutdown
      */
-    public void shutdown(){
+    public void shutdown() {
         urlDB.closeDB();
     }
 
