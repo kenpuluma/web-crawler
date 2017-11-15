@@ -8,7 +8,7 @@ class MyCrawlerConfig extends CrawlerConfig {
     public boolean shouldVisit(WebURL url) {
         String href = url.getUrl().toLowerCase();
 
-        return href.contains("http://sports.sina.com.cn");
+        return href.contains("www.espn.com/nba/");
     }
 }
 
@@ -20,7 +20,7 @@ public class WebCrawlerTest {
         // do some configuration
         // connection config
         config.setNumberOfCrawler(7);
-        config.addSeedURL("http://sports.sina.com.cn/");
+        config.addSeedURL("http://www.espn.com/nba/");
         config.setVisitDelay(-1);
         config.setMaxPages(-1);
 
@@ -30,9 +30,9 @@ public class WebCrawlerTest {
 
         // mode config
         config.setOffline(true);
-        config.setResumable(true);
-        config.setFilePath("N:\\Temps\\frontier\\result.dat");
-        config.setWorkPath("N:\\Temps\\frontier");
+        config.setResumable(false);
+        config.setFilePath("C:\\Cache\\cs521\\result.dat");
+        config.setWorkPath("C:\\Cache\\cs521\\frontier");
 
 
         CrawlerMonitor crawlerMonitor = new CrawlerMonitor(config);

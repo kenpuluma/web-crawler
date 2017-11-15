@@ -73,7 +73,7 @@ public class HttpResponseClient {
             return null;
 
         HttpUriRequest httpUriRequest = null;
-        HTTPResponseResult responseResult = new HTTPResponseResult();
+        HttpResponseResult responseResult = new HttpResponseResult();
         String html = null;
 
         try {
@@ -95,7 +95,6 @@ public class HttpResponseClient {
             responseResult.setHttpEntity(httpResponse.getEntity());
 
             // do something according to the response
-            // TODO: 2017/4/9 response to other code
             if (responseResult.getStatusCode() == HttpStatus.SC_OK) {   // is 200
                 html = fetch(responseResult);
             }
@@ -120,7 +119,7 @@ public class HttpResponseClient {
      * @return Html content of the page
      * @throws IOException On failed to read content
      */
-    public String fetch(HTTPResponseResult responseResult) throws IOException {
+    public String fetch(HttpResponseResult responseResult) throws IOException {
         Scanner scanner = new Scanner(responseResult.getHttpEntity().getContent(), "UTF-8");
         StringBuilder stringBuilder = new StringBuilder();
 

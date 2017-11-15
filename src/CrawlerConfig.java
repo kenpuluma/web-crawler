@@ -254,7 +254,6 @@ public class CrawlerConfig {
      * @return True if the page should be visited
      */
     public boolean shouldVisit(WebURL url) {
-        // TODO: 2017/4/9 robots rule
         return true;
     }
 }

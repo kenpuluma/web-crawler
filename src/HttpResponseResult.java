@@ -4,7 +4,7 @@ import org.apache.http.HttpEntity;
 /**
  * Created by Lanslot on 2017/3/27.
  */
-public class HTTPResponseResult {
+public class HttpResponseResult {
 
     private int statusCode;
     private HttpEntity httpEntity;

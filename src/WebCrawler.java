@@ -177,7 +177,6 @@ public class WebCrawler implements Runnable {
         page.setHash(hashCode);
 
         // add it to the result list
-        // TODO: 2017/4/9 fix missing or garbled text
         if (page.getTitle().length() > 0 && page.getText().length() > 0)
             resultPages.add(page);
 
